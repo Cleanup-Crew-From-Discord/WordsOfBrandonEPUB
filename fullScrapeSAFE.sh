@@ -1,6 +1,5 @@
-rm links.txt
 cd webget
-./webGetter.sh
+./webGetter.sh || cd ..; exit 1  #generate a list of ALL coppermind WoB pages. quit with error if nothing has changed since last run.
 cd ..
 mkdir -p python/html python/text python/sortedtext/ outBook/Text
 rm python/html/* python/text/* python/sortedtext/* outBook/toc.ncx outBook/content.opf outBook/Text/*
