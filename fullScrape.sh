@@ -1,6 +1,6 @@
 rm links.txt
 cd webget
-./webGetter.sh
+python3 webGetter.py
 cd ..
 mkdir -p python/html python/text python/sortedtext/ outBook/Text
 rm python/html/* python/text/* python/sortedtext/* outBook/toc.ncx outBook/content.opf outBook/Text/*
