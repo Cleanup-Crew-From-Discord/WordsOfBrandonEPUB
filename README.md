@@ -45,17 +45,18 @@ tada!
 
 ## Usage
 
-* `./fullScrape.sh` let it run and it will spit out an ebook
-* `./useOldData.sh` recreate ebook from existing data
-* `./fullScrapeSAFE.sh` quits if no new Q&A's have been posted. Ideal for automation purposes
+* run the file to get the most recent annotations
+  following features are only planned
+* run the file with --ziponly to regen a zip file without ripping again
+* run the file with --full to pull every single word of brandon
 
 Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
 ## Roadmap
 
-- [WIP] Cleanup codebase
-    - [ ] Remove all bash
-    - [ ] Make directory structure less chaotic
-    - [ ] Merge py files 
+- [X] Cleanup codebase
+    - [X] Remove all bash
+    - [X] Make directory structure less chaotic
+    - [X] Merge py files 
 - [ ] Add insert pages for the release of each work, to provide a "stopping point" for spoilers
 - [ ] Make a better looking default cover
 - [ ] Choose a license
