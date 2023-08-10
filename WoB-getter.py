@@ -108,6 +108,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
         with open(os.path.join(saveFolder,f"{newname}.txt"),'w') as extraData:
             extraData.write(oldtitle)
 
+
 #initial web getting code
 def getLinks(location,mode="annotations"):
     i = 1
@@ -144,6 +145,9 @@ if __name__ == '__main__': #standalone run function
     #--full: get every page and not just annotations
     #--use-old-files: rezip from already grabbed files
     #--force: refresh data even if no new links have appeared
+    if not os.path.exists(os.path.join(root,"outBook","Text")):
+        os.mkdir(os.path.join(root,"outBook","Text"))
+
     if "--use-old-files" not in sys.argv[1:]:
         print("Hello! Would you like to scrape some data today?")
         print("Reading every link on each page of wob.coppermind.net...")
