@@ -54,6 +54,7 @@ def trimHTML(inArr):
     mode=""
     title=""
     date=""
+    dateSort=""
     titleGotten=False
     outString.write('<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n<html lang="en-us" xmlns="http://www.w3.org/1999/xhtml">\n<head><title></title></head>\n<body>')
     for item in inArr:
@@ -83,7 +84,9 @@ def trimHTML(inArr):
                 else:
                     outString.write(f"{item}\n")
     outString.write('<center>---</center>\n</body>\n</html>')
-    return outString.getvalue().replace("\\xe2\\x80\\x99","'"),title,date,dateSort
+    if dateSort=="":
+        dateSort="99999999"
+    return outString.getvalue(),title,date,dateSort
 
 def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to just what is needed and sorts them
     http = urllib3.PoolManager()
