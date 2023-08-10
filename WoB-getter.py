@@ -48,14 +48,25 @@ def generateImportantFiles(readDir,writeDir):
         opf.write('</spine> <guide> <reference type="toc" title="Table of Contents" href="Text/TOC.xhtml"/> </guide> </package>\n')
 
 #html sorting code
+def monthToNum(shortMonth):
+    return {
+            'jan': "1",
+            'feb': "2",
+            'march': "3",
+            'april': "4",
+            'may': "5",
+            'june': "6",
+            'july': "7",
+            'aug': "8",
+            'sept': "9",
+            'oct': "10",
+            'nov': "11",
+            'dec': "12"
+    }[shortMonth.lower()]
 def trimHTML(inArr):
     outString = io.StringIO()
     skipLines=0
     mode=""
-    title=""
-    date=""
-    dateSort=""
-    titleGotten=False
     outString.write('<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n<html lang="en-us" xmlns="http://www.w3.org/1999/xhtml">\n<head><title></title></head>\n<body>')
     for item in inArr:
         if not skipLines:
@@ -64,13 +75,12 @@ def trimHTML(inArr):
             elif "entry-speaker" in item: #next line is a name or something else to be bolded
                 skipLines=1
                 mode="author"
-            elif 'class="entry-event-name"' in item and not titleGotten: #the title and date are present
-                title=item.split(">")[1].split(" (<")[0]
-                datearr=item.split('datetime="')[1].split('"')[0].split("-")
-                date=f"{calendar.month_name[int(datearr[1])]} {datearr[2]} {datearr[0]}"
-                dateSort=f"{datearr[0]}{str(datearr[1]).zfill(2)}{str(datearr[2]).zfill(2)}"
-                outString.write(f'<p><center><big><big><b>{title}</b></big></big></center>\n<center><big><b>{date}</b></big></center></p>\n')
-                titleGotten=True
+            elif "<th class=\"w3-hide-medium\">Name</th>" in item:
+                mode="title"
+                skipLines=1
+            elif "<th class=\"w3-hide-medium\">Date</th>" in item:
+                mode="date"
+                skipLines=1
         else:
             if mode=="author":
                 outString.write(f"<b>{item}:</b>\n")
@@ -83,9 +93,18 @@ def trimHTML(inArr):
                     skipLines-=1
                 else:
                     outString.write(f"{item}\n")
+            elif mode=="title":
+                title=item.replace("<td>","").replace("</td>","")
+                outString.write(f"<p><center><big><big>{title}</big></big></center></p>\n")
+                skipLines-=1
+            elif mode=="date":
+                date=item.replace("<td>","").replace("</td>","")
+                outString.write(f"<p><center><big>{date}</big></center></p>\n")
+                skipLines-=1
+
     outString.write('<center>---</center>\n</body>\n</html>')
-    if dateSort=="":
-        dateSort="99999999"
+    op=re.sub('[.,]','',date).split()
+    dateSort=f"{op[2]}{monthToNum(op[0]).zfill(2)}{op[1].zfill(2)}"
     return outString.getvalue(),title,date,dateSort
 
 def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to just what is needed and sorts them
