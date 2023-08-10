@@ -7,6 +7,8 @@ import zipfile
 from filecmp import cmp
 from datetime import date
 
+import sys
+
 root=os.path.dirname(__file__)
 #ebook metadata generation code
 def generateImportantFiles(readDir,writeDir):
@@ -133,32 +135,51 @@ def checkFiles(file1,file2):
         return False #they dont match if one doesn't exist
 
 if __name__ == '__main__': #standalone run function
-    print("Hello! Would you like to scrape some data today?")
-    print("Reading every link on each page of wob.coppermind.net...")
-    
-    getLinks(location=os.path.join(root,"links.txt"))
 
-    print("moving files...")
-    os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
-    print("cleaning old files away")
-    for file in os.listdir(os.path.join(root,"outBook","Text")):
-        os.remove(os.path.join(root,"outBook","Text",file)) #clean folder
-    try:
-        os.remove(os.path.join(root,"outBook","toc.ncx"))
-    except OSError:
-        pass
-    try:
-        os.remove(os.path.join(root,"outBook","content.opf"))
-    except OSError:
-        pass
-    print("old files removed\nGenerating pages...")
-    convertDataFromLinks(os.path.join(root,"oldlinks.txt"), os.path.join(root,"outBook","Text"))
-    print("Pages generated\nGenerating metadata...")
-    generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"))
-    os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
-    print("Metadata generated\nZipping...")
+    sys.argv[1:]
+    #argument list:
+    #--full: get every page and not just annotations
+    #--use-old-files: rezip from already grabbed files
+    #--force: refresh data even if no new links have appeared
+    if "--use-old-files" not in sys.argv[1:]:
+        print("Hello! Would you like to scrape some data today?")
+        print("Reading every link on each page of wob.coppermind.net...")
+        if "--full" in sys.argv:
+            print("Full mode enabled, grabbing every link...\nThis will take a while...")
+            getLinks(location=os.path.join(root,"links.txt"),mode="full")
+        else:
+            getLinks(location=os.path.join(root,"links.txt"))
+
+        if checkFiles(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt")) and "--force" not in sys.argv:
+            print("no changes have been made since last rip. Rezipping...")
+            os.remove(os.path.join(root,"links.txt"))
+        else:
+            print("moving files...")
+            os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
+            print("cleaning old files away")
+            for file in os.listdir(os.path.join(root,"outBook","Text")):
+                os.remove(os.path.join(root,"outBook","Text",file)) #clean folder
+            try:
+                os.remove(os.path.join(root,"outBook","toc.ncx"))
+            except OSError:
+                pass
+            try:
+                os.remove(os.path.join(root,"outBook","content.opf"))
+            except OSError:
+                pass
+            print("old files removed\nGenerating pages...")
+            convertDataFromLinks(os.path.join(root,"oldlinks.txt"), os.path.join(root,"outBook","Text"))
+            print("Pages generated\nGenerating metadata...")
+            generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"))
+            os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
+            print("Metadata generated\nZipping...")
     readfrom=os.path.join(root,"outBook")
-    zipf = zipfile.ZipFile(os.path.join(root,"woa.epub") , mode='w')
+    if "--use-old-files" in sys.argv:
+        zipf = zipfile.ZipFile(os.path.join(root,"oldFiles.epub") , mode='w')
+    elif "--full" in sys.argv:
+        zipf = zipfile.ZipFile(os.path.join(root,"Words Of Brandon.epub") , mode='w')
+    else:
+        zipf = zipfile.ZipFile(os.path.join(root,"Cosmere Annotations.epub") , mode='w')
     lenDirPath = len(readfrom)
     for root, _ , files in os.walk(readfrom):
         for file in files:

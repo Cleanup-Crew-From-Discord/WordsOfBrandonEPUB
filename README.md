@@ -8,7 +8,7 @@ On a day of somewhat below average intelligence, I decided that I wanted the ent
 
 This is honestly kind of pointless, given the constantly updating nature of WoB, but I wanted to give it a shot anyways.
 
-And so, I wrote ***this*** mashup of bash and python.
+And so, I wrote ***this***.
 
 In order, it
 * wgets each page of Q&A sessions
@@ -45,10 +45,11 @@ tada!
 
 ## Usage
 
-* run the file to get the most recent annotations
-  following features are only planned
-* run the file with --ziponly to regen a zip file without ripping again
-* run the file with --full to pull every single word of brandon
+* run the file to get the most recent annotations, and re-zip without ripping if no new ones have been found
+* launch args:
+  * --force: re download all files no matter what
+  * --full: save every WoB page, not just annotations. Saves under a different file name
+  * --use-old-files: rezip from already grabbed files, don't check for new ones
 
 Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
 ## Roadmap
@@ -57,6 +58,7 @@ Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
     - [X] Remove all bash
     - [X] Make directory structure less chaotic
     - [X] Merge py files 
+- [X] Add different launch arguments
 - [ ] Add insert pages for the release of each work, to provide a "stopping point" for spoilers
 - [ ] Make a better looking default cover
 - [ ] Choose a license
