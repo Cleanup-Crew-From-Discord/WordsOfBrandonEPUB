@@ -29,9 +29,8 @@ Installing and running yourself is completely unnecessary* if you just want the 
 
 ### Prerequisites 
 
-* Linux distribution with python3
-    * currently no support for Windows, but you can always just grab the latest ebook or run WSL.
-    * support will come eventually in the form of a fully Python codebase, but this is pretty low priority
+* Python3
+     * urllib3 module (`python3 -m pip install urllib3`)
 * 100MB of disk space (uses way less than this, ~5MB by default, but with --full and the passage of time that may change)
 * Functional RAM and CPU
 * Internet (duh)
