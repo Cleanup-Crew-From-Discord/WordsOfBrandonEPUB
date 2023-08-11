@@ -2,7 +2,6 @@ import os
 import io
 import re
 import urllib3
-import calendar
 import zipfile
 from filecmp import cmp
 from datetime import date
@@ -65,22 +64,24 @@ def monthToNum(shortMonth):
     }[shortMonth.lower()]
 def trimHTML(inArr):
     outString = io.StringIO()
-    skipLines=0
+    skipLines=False
     mode=""
+    titleGotten=False
+    dateGotten=False
     outString.write('<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n<html lang="en-us" xmlns="http://www.w3.org/1999/xhtml">\n<head><title></title></head>\n<body>')
     for item in inArr:
         if not skipLines:
             if "entry-content" in item: #use this tag as a line break
-                outString.write("</p>\n\n<center>***</center>\n<p>")
+                outString.write("</p>\n\n<center>* * *</center>\n<p>")
             elif "entry-speaker" in item: #next line is a name or something else to be bolded
-                skipLines=1
+                skipLines=True
                 mode="author"
             elif "<th class=\"w3-hide-medium\">Name</th>" in item:
                 mode="title"
-                skipLines=1
+                skipLines=True
             elif "<th class=\"w3-hide-medium\">Date</th>" in item:
                 mode="date"
-                skipLines=1
+                skipLines=True
         else:
             if mode=="author":
                 outString.write(f"<b>{item}:</b>\n")
@@ -90,17 +91,19 @@ def trimHTML(inArr):
             elif mode=="body":
                 if "</div>" in item:
                     mode=""
-                    skipLines-=1
+                    skipLines=False
                 else:
                     outString.write(f"{item}\n")
-            elif mode=="title":
+            elif mode=="title" and titleGotten==False:
                 title=item.replace("<td>","").replace("</td>","")
                 outString.write(f"<p><center><big><big>{title}</big></big></center></p>\n")
-                skipLines-=1
-            elif mode=="date":
+                skipLines=False
+                titleGotten=True
+            elif mode=="date" and dateGotten==False:
                 date=item.replace("<td>","").replace("</td>","")
                 outString.write(f"<p><center><big>{date}</big></center></p>\n")
-                skipLines-=1
+                skipLines=False
+                dateGotten=True
 
     outString.write('<center>---</center>\n</body>\n</html>')
     op=re.sub('[.,]','',date).split()
@@ -110,16 +113,42 @@ def trimHTML(inArr):
 def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to just what is needed and sorts them
     http = urllib3.PoolManager()
     sortList=[]
+    excludeList=[]
+    upLine = '\033[1A'
+
     with open(location,"r") as links:
-        for line in links.readlines():
+        allLinks=links.readlines()
+        linkCount=len(allLinks)
+        ogLinkCount=linkCount
+        uplines=0
+        for line in allLinks:
+            while uplines>0:
+                print(upLine,end="")
+                uplines-=1
+            num=((ogLinkCount-linkCount)/ogLinkCount)
+            numRound=(f"{num*100:.2f}")
+            print(f"{linkCount} articles to read ({numRound}% done)            ")
+            uplines+=1
             response = http.request("GET",line.strip())
             rawHTML=response.data.decode()
             data,title,date,dateSort=trimHTML(rawHTML.splitlines())
-            fileTitle=f"{re.sub(r'[^a-zA-Z0-9 ]', '', title)}_{date}.html"
-            with open(os.path.join(saveFolder,fileTitle),'w') as outFile:
-                outFile.write(data)
-            sortList.append((dateSort,fileTitle))
+            if '<b>' not in data: #no bold tag means no questioners asked anything meaning no questions meaning no content, some articles just have nothing
+                excludeList.append(f"{line.strip()} has no content, excluding                                ")
+            else:
+                fileTitle=f"{re.sub(r'[^a-zA-Z0-9 ]', '', title)}_{date}.html"
+                with open(os.path.join(saveFolder,fileTitle),'w') as outFile:
+                    outFile.write(data)
+                sortList.append((dateSort,fileTitle))
+            for exclude in excludeList:
+                print(exclude)
+                uplines+=1
+            linkCount-=1
+
     sortList.sort()
+    survivingItems=len(sortList)
+    num=(1-((ogLinkCount-survivingItems)/ogLinkCount))
+    numRound=(f"{num*100:.2f}")
+    print(f"Done scraping data\n{survivingItems} articles with content ({numRound}% of total)")
     for moveItem in sortList:
         discard,oldtitle=moveItem
         newname=str(sortList.index(moveItem)).zfill(8)
@@ -147,7 +176,7 @@ def getLinks(location,mode="annotations"):
                     elif "annotations" in line:
                         links.write(f'https://wob.coppermind.net/events/{line.split("/")[-2]}/\n')
             previous=response.data
-            print(f"Page {i} read")
+            print(f"Page {i} read", end="\r")
             i+=1
 
 #check if the generated links are identical. If they are, quit
@@ -164,24 +193,27 @@ if __name__ == '__main__': #standalone run function
     #--full: get every page and not just annotations
     #--use-old-files: rezip from already grabbed files
     #--force: refresh data even if no new links have appeared
+    #--use-old-links: reuse old links file
     if not os.path.exists(os.path.join(root,"outBook","Text")):
         os.mkdir(os.path.join(root,"outBook","Text"))
 
     if "--use-old-files" not in sys.argv[1:]:
         print("Hello! Would you like to scrape some data today?")
-        print("Reading every link on each page of wob.coppermind.net...")
-        if "--full" in sys.argv:
-            print("Full mode enabled, grabbing every link...\nThis will take a while...")
-            getLinks(location=os.path.join(root,"links.txt"),mode="full")
-        else:
-            getLinks(location=os.path.join(root,"links.txt"))
+        if "--use-old-links" not in sys.argv:
+            print("Reading every link on each page of wob.coppermind.net...")
+            if "--full" in sys.argv:
+                print("Full mode enabled, grabbing every link...\nThis will take a while...")
+                getLinks(location=os.path.join(root,"links.txt"),mode="full")
+            else:
+                getLinks(location=os.path.join(root,"links.txt"))
 
         if checkFiles(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt")) and "--force" not in sys.argv:
             print("no changes have been made since last rip. Rezipping...")
             os.remove(os.path.join(root,"links.txt"))
         else:
             print("moving files...")
-            os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
+            if "--use-old-links" not in sys.argv:
+                os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
             print("cleaning old files away")
             for file in os.listdir(os.path.join(root,"outBook","Text")):
                 os.remove(os.path.join(root,"outBook","Text",file)) #clean folder
@@ -212,4 +244,4 @@ if __name__ == '__main__': #standalone run function
             filePath = os.path.join(root, file)
             zipf.write(filePath , filePath[lenDirPath :] )
     zipf.close()
-    print("Ebook made! Goodbye!")
+    print("Ebook made! Goodbye!")                
