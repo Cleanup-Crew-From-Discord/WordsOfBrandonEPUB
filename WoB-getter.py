@@ -14,13 +14,13 @@ def generateImportantFiles(readDir,writeDir):
     today = date.today()
     d2 = today.strftime("%B %d, %Y")
     nextDict={}
-    with open(os.path.join(writeDir,"toc.ncx"),'w') as ToC:
+    with open(os.path.join(writeDir,"toc.ncx"),'w',encoding="utf-8") as ToC:
         n=1
         ToC.write('<?xml version=\'1.0\' encoding=\'utf-8\'?> <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="eng"> <head> <meta content="fa10ed69-1e99-41b6-a80d-2d1ce2f9a2ad" name="dtb:uid"/> <meta content="3" name="dtb:depth"/> <meta content="calibre (4.12.0)" name="dtb:generator"/> <meta content="0" name="dtb:totalPageCount"/> <meta content="0" name="dtb:maxPageNumber"/> </head> <docTitle> <text>The Stormlight Archive 02 - Words of Radiance</text> </docTitle><navMap>\n')
         for file in os.listdir(readDir):
             if file.endswith(".html"):
                 title=""
-                with open(os.path.join(readDir,file.replace("html","txt")),'r') as textFile:
+                with open(os.path.join(readDir,file.replace("html","txt")),'r',encoding="utf-8") as textFile:
                     title=textFile.readline().strip()
                 os.remove(os.path.join(readDir,file.replace("html","txt")))
                 ToC.write(f'<navPoint class="chapter" id="np_{n}" playOrder="{n}"><navLabel><text>{title}</text></navLabel><content src="Text/{file}"/></navPoint>\n')
@@ -28,14 +28,14 @@ def generateImportantFiles(readDir,writeDir):
                 n+=1
         ToC.write('</navMap></ncx>\n')
 
-    with open(os.path.join(writeDir,"TOC.xhtml"),'w') as TOCHTML:
+    with open(os.path.join(writeDir,"TOC.xhtml"),'w',encoding="utf-8") as TOCHTML:
         TOCHTML.write('<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <title>Table of Contents</title> <link href="../Styles/sgc-toc.css" rel="stylesheet" type="text/css"/> </head> <body> <div class="sgc-toc-title">Table of Contents</div>\n')
         for value in nextDict.values():
             title,filename=value
             TOCHTML.write(f'<div class="sgc-toc-level-1"> <a href="{filename}">{title}</a> </div>\n')
         TOCHTML.write('</body></html>\n')
 
-    with open(os.path.join(writeDir,"content.opf"),'w') as opf:
+    with open(os.path.join(writeDir,"content.opf"),'w',encoding="utf-8") as opf:
         opf.write(f'<?xml version="1.0" encoding="utf-8"?> <package version="2.0" unique-identifier="BookId" xmlns="http://www.idpf.org/2007/opf"> <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf"> <dc:identifier id="BookId" opf:scheme="UUID">urn:uuid:e7268940-a653-40b4-9257-77d17d88a4f8</dc:identifier> <dc:language>en</dc:language> <dc:title>Words of Brandon</dc:title> <meta content="1.0.0" name="SandoRip Version"/> <dc:date opf:event="modification" xmlns:opf="http://www.idpf.org/2007/opf">{d2}</dc:date> </metadata> <manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n')
         for value in nextDict.values():
             title,filename=value
@@ -116,7 +116,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
     excludeList=[]
     upLine = '\033[1A'
 
-    with open(location,"r") as links:
+    with open(location,"r",encoding="utf-8") as links:
         allLinks=links.readlines()
         linkCount=len(allLinks)
         ogLinkCount=linkCount
@@ -136,7 +136,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
                 excludeList.append(f"{line.strip()} has no content, excluding                                ")
             else:
                 fileTitle=f"{re.sub(r'[^a-zA-Z0-9 ]', '', title)}_{date}.html"
-                with open(os.path.join(saveFolder,fileTitle),'w') as outFile:
+                with open(os.path.join(saveFolder,fileTitle),'w',encoding="utf-8") as outFile:
                     outFile.write(data)
                 sortList.append((dateSort,fileTitle))
             for exclude in excludeList:
@@ -153,7 +153,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
         discard,oldtitle=moveItem
         newname=str(sortList.index(moveItem)).zfill(8)
         os.rename(os.path.join(saveFolder,oldtitle), os.path.join(saveFolder,f"{newname}.html"))
-        with open(os.path.join(saveFolder,f"{newname}.txt"),'w') as extraData:
+        with open(os.path.join(saveFolder,f"{newname}.txt"),'w',encoding="utf-8") as extraData:
             extraData.write(oldtitle)
 
 
@@ -162,7 +162,7 @@ def getLinks(location,mode="annotations"):
     i = 1
     previous=""
     http = urllib3.PoolManager()
-    with open(location,'w') as links:
+    with open(location,'w',encoding="utf-8") as links:
         while True:
             response = http.request("GET",f"https://wob.coppermind.net/events/?page={i}&")
             if response.data == previous: #coppermind returns the last page if you go past its number with requests, so it must be manually checked
@@ -222,6 +222,7 @@ if __name__ == '__main__': #standalone run function
         else:
             qprint("Moving files...")
             if "--use-old-links" not in sys.argv:
+                os.remove(os.path.join(root,"oldlinks.txt"))
                 os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
             qprint("Cleaning old files away")
             for file in os.listdir(os.path.join(root,"outBook","Text")):
