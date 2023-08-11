@@ -123,11 +123,11 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
         uplines=0
         for line in allLinks:
             while uplines>0:
-                print(upLine,end="")
+                qprint(upLine,end="")
                 uplines-=1
             num=((ogLinkCount-linkCount)/ogLinkCount)
             numRound=(f"{num*100:.2f}")
-            print(f"{linkCount} articles to read ({numRound}% done)            ")
+            qprint(f"{linkCount} articles to read ({numRound}% done)            ")
             uplines+=1
             response = http.request("GET",line.strip())
             rawHTML=response.data.decode()
@@ -148,7 +148,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
     survivingItems=len(sortList)
     num=(1-((ogLinkCount-survivingItems)/ogLinkCount))
     numRound=(f"{num*100:.2f}")
-    print(f"Done scraping data\n{survivingItems} articles with content ({numRound}% of total)")
+    qprint(f"Done scraping data\n{survivingItems} articles with content ({numRound}% of total)")
     for moveItem in sortList:
         discard,oldtitle=moveItem
         newname=str(sortList.index(moveItem)).zfill(8)
@@ -166,7 +166,7 @@ def getLinks(location,mode="annotations"):
         while True:
             response = http.request("GET",f"https://wob.coppermind.net/events/?page={i}&")
             if response.data == previous: #coppermind returns the last page if you go past its number with requests, so it must be manually checked
-                print("All pages read")
+                qprint("All pages read")
                 break
             data=f"{response.data}".replace("\\n","\n")
             for line in data.splitlines():
@@ -176,7 +176,7 @@ def getLinks(location,mode="annotations"):
                     elif "annotations" in line:
                         links.write(f'https://wob.coppermind.net/events/{line.split("/")[-2]}/\n')
             previous=response.data
-            print(f"Page {i} read", end="\r")
+            qprint(f"Page {i} read", end="\r")
             i+=1
 
 #check if the generated links are identical. If they are, quit
@@ -185,36 +185,45 @@ def checkFiles(file1,file2):
         return cmp(file1,file2)
     except FileNotFoundError:
         return False #they dont match if one doesn't exist
-
+#dont print if quiet
+def qprint(inString,end="\n"):
+    if "--quiet" not in sys.argv:
+        print(inString,end=end)
 if __name__ == '__main__': #standalone run function
 
     sys.argv[1:]
-    #argument list:
+    #flag list:
     #--full: get every page and not just annotations
     #--use-old-files: rezip from already grabbed files
     #--force: refresh data even if no new links have appeared
     #--use-old-links: reuse old links file
+    #--crash-on-no-new-links: exit out with error code (for automation)
+    #--quiet: no print statements
     if not os.path.exists(os.path.join(root,"outBook","Text")):
         os.mkdir(os.path.join(root,"outBook","Text"))
 
     if "--use-old-files" not in sys.argv[1:]:
-        print("Hello! Would you like to scrape some data today?")
+        qprint("Hello! Would you like to scrape some data today?")
         if "--use-old-links" not in sys.argv:
-            print("Reading every link on each page of wob.coppermind.net...")
+            qprint("Reading every link on each page of wob.coppermind.net...")
             if "--full" in sys.argv:
-                print("Full mode enabled, grabbing every link...\nThis will take a while...")
+                qprint("Full mode enabled, grabbing every link...\nThis will take a while...")
                 getLinks(location=os.path.join(root,"links.txt"),mode="full")
             else:
                 getLinks(location=os.path.join(root,"links.txt"))
 
         if checkFiles(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt")) and "--force" not in sys.argv:
-            print("no changes have been made since last rip. Rezipping...")
+            qprint("No changes have been made since last rip. ",end="")
+            if "--crash-on-no-new-links" in sys.argv:
+                qprint("\nCrash flag detected, failing out")
+                exit(1)
+            qprint("Rezipping...")
             os.remove(os.path.join(root,"links.txt"))
         else:
-            print("moving files...")
+            qprint("Moving files...")
             if "--use-old-links" not in sys.argv:
                 os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
-            print("cleaning old files away")
+            qprint("Cleaning old files away")
             for file in os.listdir(os.path.join(root,"outBook","Text")):
                 os.remove(os.path.join(root,"outBook","Text",file)) #clean folder
             try:
@@ -225,12 +234,12 @@ if __name__ == '__main__': #standalone run function
                 os.remove(os.path.join(root,"outBook","content.opf"))
             except OSError:
                 pass
-            print("old files removed\nGenerating pages...")
+            qprint("Old files removed\nGenerating pages...")
             convertDataFromLinks(os.path.join(root,"oldlinks.txt"), os.path.join(root,"outBook","Text"))
-            print("Pages generated\nGenerating metadata...")
+            qprint("Pages generated\nGenerating metadata...")
             generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"))
             os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
-            print("Metadata generated\nZipping...")
+            qprint("Metadata generated\nZipping...")
     readfrom=os.path.join(root,"outBook")
     if "--use-old-files" in sys.argv:
         zipf = zipfile.ZipFile(os.path.join(root,"oldFiles.epub") , mode='w')
@@ -244,4 +253,4 @@ if __name__ == '__main__': #standalone run function
             filePath = os.path.join(root, file)
             zipf.write(filePath , filePath[lenDirPath :] )
     zipf.close()
-    print("Ebook made! Goodbye!")                
+    qprint("Ebook made! Goodbye!")                

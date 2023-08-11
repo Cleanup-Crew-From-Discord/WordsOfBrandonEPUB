@@ -32,7 +32,7 @@ Installing and running yourself is completely unnecessary* if you just want the 
 * Linux distribution with python3
     * currently no support for Windows, but you can always just grab the latest ebook or run WSL.
     * support will come eventually in the form of a fully Python codebase, but this is pretty low priority
-* 100MB or so of disk space (will go DOWN as optimization improves)
+* 100MB of disk space (uses way less than this, ~5MB by default, but with --full and the passage of time that may change)
 * Functional RAM and CPU
 * Internet (duh)
 
@@ -50,6 +50,9 @@ tada!
   * --force: re download all files no matter what
   * --full: save every WoB page, not just annotations. Saves under a different file name
   * --use-old-files: rezip from already grabbed files, don't check for new ones
+  * --use-old-links: reuse old links file without checking for new links
+  * --crash-on-no-new-links: exit out with error code if no new links are detected (for automation)
+  * --quiet: no print statements
 
 Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
 ## Roadmap
