@@ -222,7 +222,10 @@ if __name__ == '__main__': #standalone run function
         else:
             qprint("Moving files...")
             if "--use-old-links" not in sys.argv:
-                os.remove(os.path.join(root,"oldlinks.txt"))
+                try:
+                    os.remove(os.path.join(root,"oldlinks.txt"))
+                except FileNotFoundError:
+                    pass
                 os.rename(os.path.join(root,"links.txt"),os.path.join(root,"oldlinks.txt"))
             qprint("Cleaning old files away")
             for file in os.listdir(os.path.join(root,"outBook","Text")):
