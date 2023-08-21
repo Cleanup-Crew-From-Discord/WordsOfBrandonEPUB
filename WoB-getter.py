@@ -113,7 +113,7 @@ def trimHTML(inArr):
 def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to just what is needed and sorts them
     http = urllib3.PoolManager()
     sortList=[]
-    excludeList=[]
+    excludeLatest=""
     upLine = '\033[1A'
 
     with open(location,"r",encoding="utf-8") as links:
@@ -128,20 +128,18 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
             num=((ogLinkCount-linkCount)/ogLinkCount)
             numRound=(f"{num*100:.2f}")
             qprint(f"{linkCount} articles to read ({numRound}% done)            ")
-            uplines+=1
             response = http.request("GET",line.strip())
             rawHTML=response.data.decode()
             data,title,date,dateSort=trimHTML(rawHTML.splitlines())
             if '<b>' not in data: #no bold tag means no questioners asked anything meaning no questions meaning no content, some articles just have nothing
-                excludeList.append(f"{line.strip()} has no content, excluding                                ")
+                excludeLatest=f"{line.strip()} has no content, excluding                                "
             else:
                 fileTitle=f"{re.sub(r'[^a-zA-Z0-9 ]', '', title)}_{date}.html"
                 with open(os.path.join(saveFolder,fileTitle),'w',encoding="utf-8") as outFile:
                     outFile.write(data)
                 sortList.append((dateSort,fileTitle))
-            for exclude in excludeList:
-                print(exclude)
-                uplines+=1
+            print(excludeLatest)
+            uplines=2
             linkCount-=1
 
     sortList.sort()
@@ -178,6 +176,8 @@ def getLinks(location,mode="annotations"):
             previous=response.data
             qprint(f"Page {i} read", end="\r")
             i+=1
+
+#add pages to indicate when a book is released for spoiler purposes
 
 #check if the generated links are identical. If they are, quit
 def checkFiles(file1,file2):
