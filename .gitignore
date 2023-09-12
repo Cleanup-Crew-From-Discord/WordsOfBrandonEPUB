@@ -1,0 +1,5 @@
+*.txt
+*.epub
+outBook/Text/*
+outBook/content.opf
+outBook/toc.ncx

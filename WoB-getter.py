@@ -212,6 +212,7 @@ def qprint(inString,end="\n"): #dont print if quiet
 if __name__ == '__main__': #standalone run function
     sys.argv=sys.argv[1:]
     sys.argv.sort() #ensure all flags are in the same order to make linkfile more consistent
+    sys.argv.append("dummy") #pure jank
     linkfile=str(sys.argv).replace("-","") #allows remembering the outputs of multiple sets of flags
     #flag list:
     #--full: get every page and not just annotations
@@ -233,7 +234,7 @@ if __name__ == '__main__': #standalone run function
             else:
                 getLinks(location=os.path.join(root,f"{linkfile}"))
 
-        if checkFiles(os.path.join(root,f"{linkfile}"),os.path.join(root,"oldlinks.txt")) and "--force" not in sys.argv:
+        if checkFiles(os.path.join(root,f"{linkfile}"),os.path.join(root,f"old{linkfile}.txt")) and "--force" not in sys.argv:
             qprint("No changes have been made since last rip. ",end="")
             if "--crash-on-no-new-links" in sys.argv:
                 qprint("\nCrash flag detected, failing out")
@@ -246,11 +247,11 @@ if __name__ == '__main__': #standalone run function
             qprint("Moving files...")
             if "--use-old-links" not in sys.argv:
                 try:
-                    os.remove(os.path.join(root,"oldlinks.txt"))
+                    os.remove(os.path.join(root,f"old{linkfile}.txt"))
                 except FileNotFoundError:
                     pass
 
-                os.rename(os.path.join(root,f"{linkfile}"),os.path.join(root,"oldlinks.txt"))
+                os.rename(os.path.join(root,f"{linkfile}"),os.path.join(root,f"old{linkfile}.txt"))
                 
             qprint("Cleaning old files away")
             for file in os.listdir(os.path.join(root,"outBook","Text")):
@@ -267,9 +268,9 @@ if __name__ == '__main__': #standalone run function
                 pass
 
             qprint("Old files removed\nGenerating pages...")
-            convertDataFromLinks(os.path.join(root,"oldlinks.txt"), os.path.join(root,"outBook","Text"))
+            convertDataFromLinks(os.path.join(root,f"old{linkfile}.txt"), os.path.join(root,"outBook","Text"))
             qprint("Pages generated\nGenerating metadata...")
-            generateImportantFiles(os.path.join(root,"outBook","Text","Words of Brandon"),os.path.join(root,"outBook"))
+            generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"),"WoB")
             os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
             qprint("Metadata generated\nZipping...")
 
