@@ -11,13 +11,12 @@ This is honestly kind of pointless, given the constantly updating nature of WoB,
 And so, I wrote ***this***.
 
 In order, it
-* wgets each page of Q&A sessions
-* from each page, gets links for each session and places them all in one link file
+* scrapes each page of Q&A sessions
+* from each page, extracts links for each Q&A session and places them all in one link file
 * checks if there are no new links from last time it was ran, exits if there aren't
 * cleans out the old files
-* wgets every single link in the link file to html, and removes some problematic characters and tags
-* reads the html and extracts the needed info (event name and date, questions asked by questioners, question spacing) to a smaller, more streamlined HTML file
-* sorts each html file by date
+* scrapes the HTML every single link in the link file, reads the HTML, and extracts the needed info (event name and date, questions asked by questioners, question spacing) to a smaller, more streamlined HTML file (a page file)
+* sorts each page file by date
 * generates table of contents page, table of contents file, and contents.opf file
 * Wraps all files into an ebook stamped with the current date
 
@@ -39,6 +38,7 @@ Installing and running yourself is completely unnecessary* if you just want the 
 
 * clone repo
 * cd into created folder
+* run the python file 
 
 tada!
 
@@ -61,7 +61,8 @@ Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
     - [X] Make directory structure less chaotic
     - [X] Merge py files 
 - [X] Add different launch arguments
-- [ ] Add insert pages for the release of each work, to provide a "stopping point" for spoilers
+- ~~[ ] Add insert pages for the release of each work, to provide a "stopping point" for spoilers~~
+    - [ ] Instead, allow and remove pages based on the associated tags
 - [ ] Make a better looking default cover
 - [ ] Choose a license
 
