@@ -1,6 +1,4 @@
-# Words of Brandon - EPUB Edition - TESTING BRANCH
-
-## Code in this branch likely doesn't work
+# Words of Brandon - EPUB Edition
 
 *"Cleanup-Crew-From-Discord, Amateur Programmer, wore white on the day he was to code an abomination"*
 
