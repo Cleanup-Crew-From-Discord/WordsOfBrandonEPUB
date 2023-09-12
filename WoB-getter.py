@@ -35,7 +35,7 @@ def generateImportantFiles(readDir,writeDir,gentitle): #ebook metadata generatio
         TOCHTML.write('<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <title>Table of Contents</title> <link href="../Styles/sgc-toc.css" rel="stylesheet" type="text/css"/> </head> <body> <div class="sgc-toc-title">Table of Contents</div>\n')
         for value in nextDict.values():
             title,filename=value
-            TOCHTML.write(f'<div class="sgc-toc-level-1"> <a href="{filename}">{title}</a> </div>\n')
+            TOCHTML.write(f'<p><div class="sgc-toc-level-1"> <a href="{filename}">{title}</a> </div></p>\n')
 
         TOCHTML.write('</body></html>\n')
 
@@ -84,6 +84,10 @@ def trimHTML(inArr): #cleans the HTML code into a simpler format for readability
             elif "entry-speaker" in item: #next line is a name or something else to be bolded, and after that, a question/answer
                 skipLines=True
                 mode="author"
+            
+            elif "/adv_search/?tags=" in item: #pry out the tags
+                tag=item.split("#")[1].split("</a>")[0]
+                outString.write(f"#{tag} ")
 
             elif "<th class=\"w3-hide-medium\">Name</th>" in item:
                 mode="title"
@@ -154,10 +158,15 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
                     outFile.write(data)
                 sortList.append((dateSort,fileTitle))
 
-            print(excludeLatest)
+            qprint(excludeLatest)
             uplines=2
             linkCount-=1
-
+    
+    while uplines>0:
+                qprint('\033[1A',end="") #move up a line / carriage return
+                uplines-=1
+    qprint(f"0 articles to read (100% done)            ")
+    qprint(excludeLatest)
     sortList.sort()
     survivingItems=len(sortList)
     num=(1-((ogLinkCount-survivingItems)/ogLinkCount))
