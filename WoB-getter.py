@@ -7,7 +7,7 @@ from filecmp import cmp
 from datetime import date
 
 import sys
-isExclusive=False
+isExclusive=True
 excludeArr=[]
 root=os.path.dirname(__file__) #because i'm lazy
 
@@ -33,15 +33,15 @@ def generateImportantFiles(readDir,writeDir,gentitle): #ebook metadata generatio
         ToC.write('</navMap></ncx>\n')
 
     with open(os.path.join(writeDir,"TOC.xhtml"),'w',encoding="utf-8") as TOCHTML:
-        TOCHTML.write('<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <title>Table of Contents</title> <link href="../Styles/sgc-toc.css" rel="stylesheet" type="text/css"/> </head> <body> <div class="sgc-toc-title">Table of Contents</div>\n')
+        TOCHTML.write('<?xml version="1.0"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <title><center>Table of Contents</center></title> <link href="../Styles/sgc-toc.css" rel="stylesheet" type="text/css"/> </head> <body> <div class="sgc-toc-title">Table of Contents</div>\n')
         for value in nextDict.values():
             title,filename=value
-            TOCHTML.write(f'<p><div class="sgc-toc-level-1"> <a href="{filename}">{title}</a> </div></p>\n')
+            TOCHTML.write(f'<p><center><div class="sgc-toc-level-1"> <a href="{filename}">{title}</a> </div></center></p>\n')
 
         TOCHTML.write('</body></html>\n')
 
     with open(os.path.join(writeDir,"content.opf"),'w',encoding="utf-8") as opf:
-        opf.write(f'<?xml version="1.0" encoding="utf-8"?> <package version="2.0" unique-identifier="BookId" xmlns="http://www.idpf.org/2007/opf"> <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf"> <dc:identifier id="BookId" opf:scheme="UUID">urn:uuid:e7268940-a653-40b4-9257-77d17d88a4f8</dc:identifier> <dc:language>en</dc:language> <dc:title>Words of Brandon</dc:title> <meta content="1.0.0" name="SandoRip Version"/> <dc:date opf:event="modification" xmlns:opf="http://www.idpf.org/2007/opf">{d2}</dc:date> </metadata> <manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n')
+        opf.write(f'<?xml version="1.0" encoding="utf-8"?> <package version="2.0" unique-identifier="BookId" xmlns="http://www.idpf.org/2007/opf"> <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf"> <dc:identifier id="BookId" opf:scheme="UUID">urn:uuid:e7268940-a653-40b4-9257-77d17d88a4f8</dc:identifier> <dc:language>en</dc:language> <dc:title>Words of Brandon</dc:title> <meta content="2.0.0" name="SandoRip Version"/> <dc:date opf:event="modification" xmlns:opf="http://www.idpf.org/2007/opf">{d2}</dc:date> </metadata> <manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n')
         for value in nextDict.values():
             title,filename=value
             opf.write(f'<item id="x{filename}" href="Text/{filename}" media-type="application/xhtml+xml"/>\n')
@@ -163,6 +163,7 @@ def trimHTML(inArr,excludes): #cleans the HTML code into a simpler format for re
     if trigger:
         outString.write(partString.getvalue())
     elif not isExclusive:
+        #don't specify the tag that actually excluded the question, because that in itself could be a spoiler in the right context
         outString.write(f"<center><i>shshshshsh</i></p><p>This content was removed for matching one of these tags: </p><p>{tiny}</p>\n\n* * *</center>\n<p>")
 
     partString = io.StringIO()
@@ -267,7 +268,8 @@ def qprint(inString,end="\n"): #dont print if quiet
 if __name__ == '__main__': #standalone run function
     sys.argv=sys.argv[1:]
     sys.argv.sort() #ensure all flags are in the same order to make linkfile more consistent
-    sys.argv.append("dummy") #pure jank
+    sys.argv.append("dummy") #pure jank, prevents crashing with no args
+    sys.argv.append("--force") #makes testing easier
     linkfile=str(sys.argv).replace("-","") #allows remembering the outputs of multiple sets of flags
     #flag list:
     #--full: get every page and not just annotations
@@ -277,7 +279,16 @@ if __name__ == '__main__': #standalone run function
     if not os.path.exists(os.path.join(root,"outBook","Text")):
         os.mkdir(os.path.join(root,"outBook","Text"))
 
-    qprint("Hello! Would you like to scrape some data today?") #funny nightblood ==|====5====>
+    qprint("Hello! Would you like to scrape some data today?") #funny nightblood ==|==========>
+    with open(os.path.join(root,"tags.txt"),'r') as tagfile:
+        lines=tagfile.readlines()
+        if lines[0].strip() == "Exclude":
+            isExclusive=False
+        
+        for line in lines[1:]:
+            excludeArr.append(line.strip())
+    
+    excludeArr.sort()        
     qprint("Reading every link on each page of wob.coppermind.net...")
     if "--full" in sys.argv:
         qprint("Full mode enabled, grabbing every link...\nThis will take a while...")

@@ -62,7 +62,8 @@ Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
     - [X] Merge py files 
 - [X] Add different launch arguments
 - ~~[ ] Add insert pages for the release of each work, to provide a "stopping point" for spoilers~~
-    - [ ] Instead, allow and remove pages based on the associated tags
+    - [X] Instead, allow and remove pages based on the associated tags
+- [ ] Possibly improve the formatting of the book / table of contents
 - [ ] Make a better looking default cover
 - [ ] Choose a license
 
