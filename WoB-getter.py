@@ -7,7 +7,8 @@ from filecmp import cmp
 from datetime import date
 
 import sys
-
+isExclusive=False
+excludeArr=[]
 root=os.path.dirname(__file__) #because i'm lazy
 
 def generateImportantFiles(readDir,writeDir,gentitle): #ebook metadata generation code
@@ -69,25 +70,39 @@ def monthToNum(shortMonth):
             'dec': "12"
     }[shortMonth.lower()]
 
-def trimHTML(inArr): #cleans the HTML code into a simpler format for readability
+#tagSet={"vin","elend"} #just for the sake of getting every tag
+
+def trimHTML(inArr,excludes): #cleans the HTML code into a simpler format for readability, excluding any tags
     outString = io.StringIO()
+    partString = io.StringIO()
+    temptags=[]
     skipLines=False
     mode=""
     titleGotten=False
     dateGotten=False
+    tagSwitch=False
+    tiny=''
+    for item in excludes:
+        tiny+=f"{item}, "
+
+    tiny=tiny[:-2]
     outString.write('<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n<html lang="en-us" xmlns="http://www.w3.org/1999/xhtml">\n<head><title></title></head>\n<body>')
     for item in inArr:
         if not skipLines:
             if "entry-content" in item: #use this tag as a line break
-                outString.write("</p>\n\n<center>* * *</center>\n<p>")
+                partString.write("</p>\n\n<center>* * *</center>\n<p>")
+                tagSwitch=False
 
             elif "entry-speaker" in item: #next line is a name or something else to be bolded, and after that, a question/answer
+                tagSwitch=True
                 skipLines=True
                 mode="author"
             
             elif "/adv_search/?tags=" in item: #pry out the tags
                 tag=item.split("#")[1].split("</a>")[0]
-                outString.write(f"#{tag} ")
+                partString.write(f"#{tag} ")
+                #tagSet.add(tag)
+                temptags.append(tag)
 
             elif "<th class=\"w3-hide-medium\">Name</th>" in item:
                 mode="title"
@@ -99,7 +114,7 @@ def trimHTML(inArr): #cleans the HTML code into a simpler format for readability
 
         else:
             if mode=="author":
-                outString.write(f"<b>{item}:</b>\n") #bold author's name, skip next line
+                partString.write(f"<b>{item}:</b>\n") #bold author's name, skip next line (irrelevant data)
                 mode="skipOne"
 
             elif mode=="skipOne": #skips next line
@@ -110,7 +125,7 @@ def trimHTML(inArr): #cleans the HTML code into a simpler format for readability
                     mode=""
                     skipLines=False
                 else:
-                    outString.write(f"{item}\n")
+                    partString.write(f"{item}\n")
 
             elif mode=="title" and titleGotten==False:
                 title=item.replace("<td>","").replace("</td>","")
@@ -123,6 +138,35 @@ def trimHTML(inArr): #cleans the HTML code into a simpler format for readability
                 outString.write(f"<p><center><big>{date}</big></center></p>\n")
                 skipLines=False
                 dateGotten=True
+
+        if tagSwitch==False:
+            trigger=not isExclusive
+            for item in excludes:
+                if (item in temptags):
+                    trigger=isExclusive
+                    break
+
+            if trigger:
+                outString.write(partString.getvalue())
+            elif not isExclusive:
+                outString.write(f"<center><i>shshshshsh</i></p><p>This content was removed for matching one of these tags: </p><p>{tiny}</p>\n\n* * *</center>\n<p>")
+
+            partString = io.StringIO()
+            temptags=[]
+
+    trigger=not isExclusive
+    for item in excludes:
+        if (item in temptags):
+            trigger=isExclusive
+            break
+
+    if trigger:
+        outString.write(partString.getvalue())
+    elif not isExclusive:
+        outString.write(f"<center><i>shshshshsh</i></p><p>This content was removed for matching one of these tags: </p><p>{tiny}</p>\n\n* * *</center>\n<p>")
+
+    partString = io.StringIO()
+    temptags=[]
 
     outString.write('<center>---</center>\n</body>\n</html>')
     op=re.sub('[.,]','',date).split()
@@ -149,13 +193,14 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
             qprint(f"{linkCount} articles to read ({numRound}% done)            ")
             response = http.request("GET",line.strip())
             rawHTML=response.data.decode()
-            data,title,date,dateSort=trimHTML(rawHTML.splitlines())
+            data,title,date,dateSort=trimHTML(rawHTML.splitlines(),excludeArr)
             if '<b>' not in data: #no bold tag means no questioners asked anything, meaning no questions, meaning no content. some articles just have nothing
-                excludeLatest=f"{line.strip()} has no content, excluding                                "
+                excludeLatest=f"{line.strip()} has no content, excluding     "
             else:
                 fileTitle=f"{re.sub(r'[^a-zA-Z0-9 ]', '', title)}_{date}.html"
                 with open(os.path.join(saveFolder,fileTitle),'w',encoding="utf-8") as outFile:
                     outFile.write(data)
+
                 sortList.append((dateSort,fileTitle))
 
             qprint(excludeLatest)
@@ -165,6 +210,7 @@ def convertDataFromLinks(location, saveFolder): #slim down the raw HTML page to 
     while uplines>0:
                 qprint('\033[1A',end="") #move up a line / carriage return
                 uplines-=1
+
     qprint(f"0 articles to read (100% done)            ")
     qprint(excludeLatest)
     sortList.sort()
@@ -225,68 +271,62 @@ if __name__ == '__main__': #standalone run function
     linkfile=str(sys.argv).replace("-","") #allows remembering the outputs of multiple sets of flags
     #flag list:
     #--full: get every page and not just annotations
-    #--use-old-files: rezip from already grabbed files
     #--force: refresh data even if no new links have appeared
-    #--use-old-links: reuse old links file
     #--crash-on-no-new-links: exit out with error code (for automation)
     #--quiet: no print statements
     if not os.path.exists(os.path.join(root,"outBook","Text")):
         os.mkdir(os.path.join(root,"outBook","Text"))
 
-    if "--use-old-files" not in sys.argv:
-        qprint("Hello! Would you like to scrape some data today?") #funny nightblood ==|=======>
-        if "--use-old-links" not in sys.argv:
-            qprint("Reading every link on each page of wob.coppermind.net...")
-            if "--full" in sys.argv:
-                qprint("Full mode enabled, grabbing every link...\nThis will take a while...")
-                getLinks(location=os.path.join(root,f"{linkfile}"),mode="full")
-            else:
-                getLinks(location=os.path.join(root,f"{linkfile}"))
+    qprint("Hello! Would you like to scrape some data today?") #funny nightblood ==|====5====>
+    qprint("Reading every link on each page of wob.coppermind.net...")
+    if "--full" in sys.argv:
+        qprint("Full mode enabled, grabbing every link...\nThis will take a while...")
+        getLinks(location=os.path.join(root,f"{linkfile}.txt"),mode="full")
+    else:
+        getLinks(location=os.path.join(root,f"{linkfile}.txt"))
 
-        if checkFiles(os.path.join(root,f"{linkfile}"),os.path.join(root,f"old{linkfile}.txt")) and "--force" not in sys.argv:
-            qprint("No changes have been made since last rip. ",end="")
-            if "--crash-on-no-new-links" in sys.argv:
-                qprint("\nCrash flag detected, failing out")
-                exit(1)
+    if checkFiles(os.path.join(root,f"{linkfile}.txt"),os.path.join(root,f"old{linkfile}.txt")) and "--force" not in sys.argv:
+        qprint("No changes have been made since last rip. ",end="")
+        if "--crash-on-no-new-links" in sys.argv:
+            qprint("\nCrash flag detected, failing out")
+            os.remove(os.path.join(root,f"{linkfile}.txt"))
+            exit(1)
 
-            qprint("Rezipping...")
-            os.remove(os.path.join(root,f"{linkfile}"))
-        
-        else:
-            qprint("Moving files...")
-            if "--use-old-links" not in sys.argv:
-                try:
-                    os.remove(os.path.join(root,f"old{linkfile}.txt"))
-                except FileNotFoundError:
-                    pass
+        qprint("Rezipping...")
+        os.remove(os.path.join(root,f"{linkfile}.txt"))
+    
+    else:
+        qprint("Moving files...")
+        try:
+            os.remove(os.path.join(root,f"old{linkfile}.txt"))
+        except FileNotFoundError:
+            pass
 
-                os.rename(os.path.join(root,f"{linkfile}"),os.path.join(root,f"old{linkfile}.txt"))
-                
-            qprint("Cleaning old files away")
-            for file in os.listdir(os.path.join(root,"outBook","Text")):
-                os.remove(os.path.join(root,"outBook","Text",file)) #clean folder, windows throws a fit if you don't
+        os.rename(os.path.join(root,f"{linkfile}.txt"),os.path.join(root,f"old{linkfile}.txt"))
+            
+        qprint("Cleaning old files away")
+        for file in os.listdir(os.path.join(root,"outBook","Text")):
+            os.remove(os.path.join(root,"outBook","Text",file)) #clean folder, windows throws a fit if you don't
 
-            try:
-                os.remove(os.path.join(root,"outBook","toc.ncx"))
-            except OSError:
-                pass
+        try:
+            os.remove(os.path.join(root,"outBook","toc.ncx"))
+        except OSError:
+            pass
 
-            try:
-                os.remove(os.path.join(root,"outBook","content.opf"))
-            except OSError:
-                pass
+        try:
+            os.remove(os.path.join(root,"outBook","content.opf"))
+        except OSError:
+            pass
 
-            qprint("Old files removed\nGenerating pages...")
-            convertDataFromLinks(os.path.join(root,f"old{linkfile}.txt"), os.path.join(root,"outBook","Text"))
-            qprint("Pages generated\nGenerating metadata...")
-            generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"),"WoB")
-            os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
-            qprint("Metadata generated\nZipping...")
+        qprint("Old files removed\nGenerating pages...")
+        convertDataFromLinks(os.path.join(root,f"old{linkfile}.txt"), os.path.join(root,"outBook","Text"))
+        qprint("Pages generated\nGenerating metadata...")
+        generateImportantFiles(os.path.join(root,"outBook","Text"),os.path.join(root,"outBook"),"WoB")
+        os.rename(os.path.join(root,"outBook","TOC.xhtml"),os.path.join(root,"outBook","Text","TOC.xhtml"))
+        qprint("Metadata generated\nZipping...")
 
     readfrom=os.path.join(root,"outBook")
-    if "--use-old-files" in sys.argv:
-        zipf = zipfile.ZipFile(os.path.join(root,"oldFiles.epub") , mode='w')
-    elif "--full" in sys.argv:
+    if "--full" in sys.argv:
         zipf = zipfile.ZipFile(os.path.join(root,"Words Of Brandon.epub") , mode='w')
     else:
         zipf = zipfile.ZipFile(os.path.join(root,"Cosmere Annotations.epub") , mode='w')
@@ -298,4 +338,8 @@ if __name__ == '__main__': #standalone run function
             zipf.write(filePath , filePath[lenDirPath :] )
     
     zipf.close()
-    qprint("Ebook made! Goodbye!")                
+    qprint("Ebook made! Goodbye!") 
+
+    # tl=list(tagSet)               
+    # tl.sort()
+    # print(tl)
