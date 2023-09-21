@@ -2,11 +2,13 @@
 
 ## Code in this branch likely doesn't work
 
-*"Cleanup-Crew-From-Discord, Amateur Programmer, wore white on the day he was to code an abomination"*
+*"Cleanup-Crew-From-Discord, Amateur Programmer, wore white on the day he was to code an abomination"*\*
 
-On a day of somewhat below average intelligence, I decided that I wanted the entirety of the Words of Brandon on my old Kindle to read whenever I pleased.
+<sup><sub>\*not quite as much of an abomination anymore</sub></sup>
 
-This is honestly kind of pointless, given the constantly updating nature of WoB, but I wanted to give it a shot anyways.
+On a day of somewhat below average intelligence, I decided that I wanted the entirety of [The Arcanum](https://wob.coppermind.net) on my old Kindle to read whenever I pleased.
+
+This is honestly kind of pointless, given its constantly updating nature, but I wanted to give it a shot anyways.
 
 And so, I wrote ***this***.
 
@@ -24,7 +26,7 @@ In order, it
 
 Installing and running yourself is completely unnecessary* if you just want the storming ebook, check the releases tab for that!
 
-<sup><sub>*not yet, I don't have auto updates working yet</sub></sup>
+<sup><sub>*if the auto updater actually works, it hasn't been able to test itself yet</sub></sup>
 
 ### Prerequisites 
 
@@ -38,6 +40,7 @@ Installing and running yourself is completely unnecessary* if you just want the 
 
 * clone repo
 * cd into created folder
+* make sure you installed urllib3
 * run the python file 
 
 tada!
@@ -48,12 +51,11 @@ tada!
 * launch args:
   * --force: re download all files no matter what
   * --full: save every WoB page, not just annotations. Saves under a different file name
-  * --use-old-files: rezip from already grabbed files, don't check for new ones
-  * --use-old-links: reuse old links file without checking for new links
   * --crash-on-no-new-links: exit out with error code if no new links are detected (for automation)
   * --quiet: no print statements
 
-Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it
+Cover art is located in `outBook/OEBPS/cover.jpg`, feel free to change it!
+
 ## Roadmap
 
 - [X] Cleanup codebase
